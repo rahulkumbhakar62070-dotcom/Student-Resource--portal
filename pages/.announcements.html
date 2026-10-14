@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements | KKCEM</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    
+    <style>
+        .page_content { max-width: 800px; margin: 100px auto; padding: 20px; }
+        .page_title {
+            color: white; text-align: center; font-size: 2.2rem;
+            margin-bottom: 40px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); font-weight: 700;
+        }
+        .announce_card { 
+            background: rgba(255, 255, 255, 0.95); padding: 25px; 
+            border-radius: 12px; margin-bottom: 20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            border-left: 5px solid var(--accent-gold); 
+            backdrop-filter: blur(5px); animation: fadeInUp 0.5s ease forwards;
+        }
+        .date_badge { 
+            background: #f0f0f0; color: #555; font-size: 0.8rem; 
+            padding: 4px 10px; border-radius: 4px; display: inline-block; 
+            margin-bottom: 10px; font-weight: 600;
+        }
+        h2 { color: var(--primary-green); margin-bottom: 10px; font-size: 1.4rem; }
+        p { color: #555; line-height: 1.6; }
+        .loading_msg { color: white; text-align: center; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <video autoplay loop muted playsinline class="back-video">
+        <source src="../assets/images/background.mp4" type="video/mp4">
+    </video>
+    <div class="video_overlay"></div>
+
+    <header class="top_header">
+        <div class="header_left">
+            <div class="menu_toggle_btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bullhorn" style="color:white;"></i>
+                <div class="portal_title">Announcements</div>
+            </div>
+        </div>
+        <div class="header_right">
+            <a href="../login.html" class="nav_login_btn">Login <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </header>
+
+    <div class="sidebar_overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar_header"><h3>KKCEM Portal</h3><div class="menu_toggle_btn" onclick="closeSidebar()"><i class="fa-solid fa-times"></i></div></div>
+        <ul class="menu_list">
+            <li><a href="../index.html"><i class="fa-solid fa-house"></i> Home</a></li>
+            <li><a href="#" onclick="toggleSubMenu('aboutSub')"><i class="fa-solid fa-landmark"></i> About <i class="fa-solid fa-chevron-down"></i></a>
+                <ul class="sub_menu" id="aboutSub">
+                    <li><a href="about/academics.html">Academics</a></li>
+                    <li><a href="about/admissions.html">Admissions</a></li>
+                    <li><a href="about/placements.html">Placements</a></li>
+
+
+<li><a href="../library.html">Library</a></li> 
+
+                </ul>
+            </li>
+            <li><a href="announcements.html" class="active"><i class="fa-solid fa-bullhorn"></i> Announcements</a></li>
+            <li><a href="about/contact.html"><i class="fa-solid fa-phone"></i> Contact</a></li>
+            <li><a href="https://jutranchi.ac.in/?page_id=1113" target="_blank"><i class="fa-solid fa-university"></i> JUT Notices</a></li>
+            <li><a href="scholarship.html"><i class="fa-solid fa-hand-holding-dollar"></i> Scholarships</a></li>
+            <li><a href="#" onclick="openSettings()"><i class="fa-solid fa-gear"></i> Settings</a></li>
+        </ul>
+    </div>
+
+    <div class="page_content">
+        <h1 class="page_title">Latest Updates</h1>
+        <div id="announcementContainer">
+            <p class="loading_msg">Checking for updates...</p>
+        </div>
+    </div>
+
+    <script src="../js/navbar.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCm__tUZQ306quXAW6vbN7PsGGtYuttLik",
+            authDomain: "bccl-ems-1826f.firebaseapp.com",
+            projectId: "bccl-ems-1826f",
+            storageBucket: "bccl-ems-1826f.firebasestorage.app",
+            messagingSenderId: "863769805844",
+            appId: "1:863769805844:web:cb2fb02b61c9d0c46e9301"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const container = document.getElementById('announcementContainer');
+        
+        // Fetch only items where category == 'announcement'
+        const q = query(collection(db, "uploads"), where("category", "==", "announcement"), orderBy("timestamp", "desc"));
+
+        onSnapshot(q, (snapshot) => {
+            container.innerHTML = ""; // Clear loading message
+            
+            if (snapshot.empty) {
+                container.innerHTML = "<p style='color:white; text-align:center;'>No announcements yet.</p>";
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : "Recent";
+                
+                const card = document.createElement('div');
+                card.className = "announce_card";
+                card.innerHTML = `
+                    <span class="date_badge"><i class="fa-regular fa-calendar"></i> ${date}</span>
+                    <h2>${data.title}</h2>
+                    <p>${data.desc}</p>
+                    ${data.url ? `<a href="${data.url}" target="_blank" style="display:inline-block; margin-top:10px; color:var(--primary-green); font-weight:600; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> View Attachment</a>` : ''}
+                `;
+                container.appendChild(card);
+            });
+        });
+    </script>
+    
+    <script>
+        function openSettings() {
+            // Basic settings modal logic if needed for public page
+             const modal = document.createElement('div');
+            modal.style.cssText = "position:fixed; bottom:0; left:0; width:100%; background:white; padding:30px; border-radius:20px 20px 0 0; box-shadow:0 -5px 20px rgba(0,0,0,0.3); z-index:5000; animation: fadeInUp 0.3s forwards;";
+            modal.innerHTML = `<h3>Settings</h3><hr style='margin:10px 0; border:0; border-top:1px solid #eee;'><div style='padding:10px 0; display:flex; justify-content:space-between;'><span>App Version</span><span style='color:#aaa;'>v1.0.0</span></div><button onclick="this.parentElement.remove()" style='margin-top:10px; width:100%; padding:10px; border:none; background:#f5f5f5; border-radius:10px;'>Close</button>`;
+            document.body.appendChild(modal);
+        }
+    </script>
+</body>
+</html>
